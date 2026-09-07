@@ -35,3 +35,26 @@ input,select{border:1px solid #dfe2e9;border-radius:8px;padding:8px;background:#
 @media(max-width:650px){.cards{grid-template-columns:1fr}}
 
 .danger-icon{color:#c45b5b!important}.danger-icon:hover{background:#fff0f0!important}.modal-delete{margin-top:10px;padding-top:14px;border-top:1px solid #e7e9ef}.modal-delete .danger{width:100%}
+
+
+/* Mobile-first navigation cleanup */
+.mobile-back{display:none}
+@media(max-width:900px){
+  .sidebar{display:none}
+  .layout{display:block}
+  .main{padding:18px 14px 28px}
+  .top{margin-bottom:18px}
+  .brand small{display:none}
+  h1{font-size:25px}
+  .panel{padding:16px}
+  .project-summary{padding:16px 14px}
+  .project-summary-name{font-size:16px}
+  .project-summary-result{font-size:16px}
+  .mobile-back{display:block;margin-bottom:12px}
+}
+@media(max-width:560px){
+  .card{padding:15px}
+  .card .value{font-size:22px}
+  .tabs{gap:6px}
+  .tab{flex:1;padding:10px 8px}
+}
