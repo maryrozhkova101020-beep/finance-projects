@@ -1,0 +1,18 @@
+{
+  "name": "ПРОЕКТЫ",
+  "short_name": "ПРОЕКТЫ",
+  "description": "Учёт проектов, доходов, расходов и прибыли",
+  "lang": "ru",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5b5bd6",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
