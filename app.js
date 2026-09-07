@@ -80,7 +80,7 @@ function construction(p,c){
  let cost=sum(c.estimate,'cost'),client=sum(c.estimate,'client'),margin=client-cost,expenses=sum(c.expenses,'amount'),income=sum(c.income,'amount');
  if(tab==='overview') tab='estimate';
  return `<div class="top"><div><h1>${esc(c.name)}</h1><div class="sub">Стройка</div></div><button class="btn secondary" onclick="childModal('${p.id}','${c.id}')">Редактировать</button></div>
- ${cards([['Себестоимость сметы',cost,'negative'],['Смета для клиента',client,''],['Маржа',margin,margin>=0?'positive':'negative'],['Приход',income,'positive'],['Расход',expenses,'negative'],['Финансовый результат',income-expenses,income-expenses>=0?'positive':'negative']])}
+ ${cards([['Себестоимость сметы',cost,'negative'],['Смета для клиента',client,''],['Маржа',margin,margin>=0?'positive':'negative'],['Приход',income,'positive'],['Расход',expenses,'negative'],['Чистая прибыль',income-expenses,income-expenses>=0?'positive':'negative']])}
  ${tabs([['estimate','Смета'],['income','Приход'],['expenses','Расход']])}
  ${tab==='estimate'?estimateView(c):tab==='income'?incomeView(c):expenseView(c.expenses,'construction',c.id)}`;
 }
