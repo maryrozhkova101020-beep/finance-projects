@@ -29,17 +29,50 @@ function constructionNet(c){return sum(c.income||[],'amount')-sum(c.expenses||[]
 function subleaseTotals(c){let rentIn=0,utilIn=0,utilExp=0;(c.tenants||[]).forEach(t=>{rentIn+=sum(t.payments||[],'amount');(t.utilities||[]).forEach(u=>{utilIn+=sum(u.income||[],'amount');utilExp+=sum(u.expense||[],'amount')})});let expenses=sum(c.expenses||[],'amount')+sum(c.rentPayments||[],'amount')+utilExp;let income=rentIn+utilIn;return {income,expenses,net:income-expenses}}
 function childNet(c){return c.kind==='sublease'?subleaseTotals(c).net:constructionNet(c)}
 function projectNet(p){return (p.children||[]).reduce((s,c)=>s+childNet(c),0)}
-function signMoney(n){return `${n>=0?'+':'−'}${money(Math.abs(n))}`}
+function signMoney(n){if(Number(n)===0)return money(0);return `${n>0?'+':'−'}${money(Math.abs(n))}`}
+function resultClass(n){return Number(n)>0?'positive':Number(n)<0?'negative':'neutral'}
 function save(){localStorage.setItem(KEY,JSON.stringify(state))}
 function project(id){return state.projects.find(x=>x.id===id)}
 function child(id){for(const p of state.projects){let c=p.children.find(x=>x.id===id);if(c)return[p,c]}return[]}
 function childCount(p){return p.children?.length||0}
 
-function app(){document.getElementById('app').innerHTML=`<div class="layout"><aside class="sidebar"><div class="brand">Финансы проектов<small>простая структура</small></div><button class="side-btn ${selected.type==='all'?'active':''}" onclick="allSelect()">📊 Главная</button><div class="tree">${state.projects.map(p=>`<div class="tree-row ${selected.id===p.id?'active':''}" onclick="selectProject('${p.id}')">📁 <b>${esc(p.name)}</b><span class="badge">${childCount(p)} подпроект(ов)</span><span class="tree-total ${projectNet(p)>=0?'positive':'negative'}">${signMoney(projectNet(p))}</span><span class="tree-actions"><button class="iconbtn" onclick="event.stopPropagation();projectModal('${p.id}')">✎</button></span></div>${p.children.map(c=>`<div class="tree-row ${selected.id===c.id?'active':''}" style="margin-left:18px" onclick="selectChild('${c.id}')">📂 ${esc(c.name)}<span class="tree-total ${childNet(c)>=0?'positive':'negative'}">${signMoney(childNet(c))}</span><span class="tree-actions"><button class="iconbtn" onclick="event.stopPropagation();childModal('${p.id}','${c.id}')">✎</button></span></div>`).join('')}<button class="side-btn mini-add" onclick="childModal('${p.id}')">＋ Добавить подпроект</button>`).join('')}</div><button class="add-project" onclick="projectModal()">＋ Новый проект</button></aside><main class="main">${view()}</main></div>`}
+function app(){
+  const sidebarProjects=state.projects.map(p=>{
+    const net=projectNet(p), count=childCount(p);
+    return `<div class="sidebar-project ${selected.type==='project'&&selected.id===p.id?'selected-project':''}">
+      <div class="project-row" onclick="selectProject('${p.id}')">
+        <div class="project-main"><span class="project-icon">📁</span><span class="project-name">${esc(p.name)}</span></div>
+        <div class="project-result ${resultClass(net)}">${signMoney(net)}</div>
+        <button class="side-edit" title="Редактировать проект" onclick="event.stopPropagation();projectModal('${p.id}')">✎</button>
+      </div>
+      <div class="project-meta">${count} ${count===1?'подпроект':'подпроекта'}</div>
+      <div class="sidebar-children">
+        ${p.children.map(c=>{const n=childNet(c);return `<div class="child-row ${selected.type==='child'&&selected.id===c.id?'active':''}" onclick="selectChild('${c.id}')">
+          <div class="child-main"><span>📂</span><span class="child-name">${esc(c.name)}</span></div>
+          <div class="child-result ${resultClass(n)}">${signMoney(n)}</div>
+          <button class="side-edit" title="Редактировать подпроект" onclick="event.stopPropagation();childModal('${p.id}','${c.id}')">✎</button>
+        </div>`}).join('')}
+      </div>
+      <button class="side-btn mini-add" onclick="childModal('${p.id}')">＋ Добавить подпроект</button>
+    </div>`;
+  }).join('');
+  document.getElementById('app').innerHTML=`<div class="layout"><aside class="sidebar">
+    <div class="brand">Финансы проектов<small>простая структура</small></div>
+    <button class="side-btn ${selected.type==='all'?'active':''}" onclick="allSelect()">📊 Главная</button>
+    <div class="tree">${sidebarProjects}</div>
+    <button class="add-project" onclick="projectModal()">＋ Новый проект</button>
+  </aside><main class="main">${view()}</main></div>`
+}
 function allSelect(){selected={type:'all'};tab='overview';app()}function selectProject(id){selected={type:'project',id};tab='overview';app()}function selectChild(id){selected={type:'child',id};let pair=child(id),c=pair[1];tab=c?.kind==='construction'?'estimate':'overview';app()}
 function cards(items){return `<div class="cards">${items.map(([l,v,cl])=>`<div class="card"><div class="label">${l}</div><div class="value ${cl||''}">${money(v)}</div></div>`).join('')}</div>`}
 function view(){if(selected.type==='all')return allView();if(selected.type==='project')return sectionView(project(selected.id));let[p,c]=child(selected.id);return c.kind==='construction'?construction(p,c):sublease(p,c)}
-function allView(){let total=state.projects.reduce((s,p)=>s+projectNet(p),0);return `<div class="top"><div><h1>Мои проекты</h1><div class="sub">Общий результат по всем подпроектам</div></div><button class="btn" onclick="projectModal()">＋ Новый проект</button></div>${cards([['Итого по всем проектам',total,total>=0?'positive':'negative']])}<div class="panel"><h2>Проекты</h2>${state.projects.map(p=>{let n=projectNet(p);return `<div class="tree-row" style="background:#f7f8fc;margin-bottom:8px" onclick="selectProject('${p.id}')">📁 <b>${esc(p.name)}</b><span class="badge">${childCount(p)} подпроект(ов)</span><span class="tree-total ${n>=0?'positive':'negative'}">${signMoney(n)}</span></div>`}).join('')||'<div class="empty">Создайте первый проект</div>'}</div>`}
+function allView(){
+  let total=state.projects.reduce((s,p)=>s+projectNet(p),0);
+  return `<div class="top"><div><h1>Мои проекты</h1><div class="sub">Общий результат по всем подпроектам</div></div><button class="btn" onclick="projectModal()">＋ Новый проект</button></div>
+  ${cards([['Итого по всем проектам',total,resultClass(total)]])}
+  <div class="panel"><h2>Проекты</h2>
+  <div class="projects-list">${state.projects.map(p=>{let n=projectNet(p),count=childCount(p);return `<div class="project-summary" onclick="selectProject('${p.id}')"><div><div class="project-summary-name">📁 ${esc(p.name)}</div><div class="project-summary-meta">${count} ${count===1?'подпроект':'подпроекта'}</div></div><div class="project-summary-result ${resultClass(n)}">${signMoney(n)}</div></div>`}).join('')||'<div class="empty">Создайте первый проект</div>'}</div></div>`
+}
 function sectionView(p){let total=projectNet(p);return `<div class="top"><div><h1>${esc(p.name)}</h1><div class="sub">Общий финансовый результат всех подпроектов</div></div><button class="btn" onclick="childModal('${p.id}')">＋ Добавить подпроект</button></div>${cards([['Итого по проекту',total,total>=0?'positive':'negative']])}<div class="panel"><h2>Подпроекты</h2>${p.children.map(c=>{let n=childNet(c);return `<div class="tree-row" style="background:#f7f8fc;margin-bottom:8px" onclick="selectChild('${c.id}')">📂 <b>${esc(c.name)}</b><span class="tree-total ${n>=0?'positive':'negative'}">${signMoney(n)}</span><span class="tree-actions"><button class="iconbtn" onclick="event.stopPropagation();childModal('${p.id}','${c.id}')">✎</button></span></div>`}).join('')||'<div class="empty">Подпроектов пока нет</div>'}</div>`}
 function tabs(a){return `<div class="tabs">${a.map(x=>`<button class="tab ${tab===x[0]?'active':''}" onclick="tab='${x[0]}';app()">${x[1]}</button>`).join('')}</div>`}
 function sum(a,key){return a.reduce((s,x)=>s+Number(x[key]||0),0)}
